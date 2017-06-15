@@ -1,0 +1,8 @@
+Most significant variables:
+
+n_hits_86
+n_hits_car
+
+n_times_bat_car
+
+player_team_87 : 
