@@ -19,7 +19,7 @@ cv.results[,"TR error"] <- 0
 cv.results[,"VA error"] <- 0
 cv.results[,"k"] <- k
 
-learn <- sample(1:n, round(0.67*n))
+#learn <- sample(1:n, round(0.67*n))
 
   # train on TR data
   for (cost in 10^seq(-2,3))
@@ -48,15 +48,17 @@ learn <- sample(1:n, round(0.67*n))
     # predict TR data
     pred.va <- predict (model.linear)
     
-    tab <- table(hitter[-va,]$Annual_salary, pred.va)
-    cv.results[j,"TR error"] <- 
+    #tab <- table(hitter[-va,]$Annual_salary, pred.va)
+    cv.results[j,"TR error"] <- ((hitter[-va,]$Annual_salary - pred.va)^2)/nrow(hitter[-va,])
     #cv.results[j,"TR error"] <- 1-sum(tab[row(tab)==col(tab)])/sum(tab)
     
     # predict VA data
     pred.va <- predict (model.linear, newdata=valset[,1:20])
     
-    tab <- table(targetval, pred.va)
-    cv.results[j,"VA error"] <- 1-sum(tab[row(tab)==col(tab)])/sum(tab)
+    #tab <- table(targetval, pred.va)
+    
+    cv.results[j,"TR error"] <- ((targetval - pred.va)^2)/nrow(hitter[va,])
+    #cv.results[j,"VA error"] <- 1-sum(tab[row(tab)==col(tab)])/sum(tab)
     
     cv.results[j,"fold"] <- j
     
@@ -78,22 +80,3 @@ learn <- sample(1:n, round(0.67*n))
      
   }
 
-library(caret)
-
-inTraining <- createFolds(hitter$Annual_salary, k = 10, list = TRUE, returnTrain = FALSE)
-training <- hitter[ inTraining,]
-testing  <- hitter[-inTraining,]
-
-fitControl <- trainControl(## 10-fold CV
-  method = "repeatedcv",
-  number = 10,
-  ## repeated ten times
-  repeats = 1)
-
-gbmFit1 <- train(Class ~ ., data = training, 
-                 method = "svm", 
-                 trControl = fitControl,
-                 ## This last option is actually one
-                 ## for gbm() that passes through
-                 verbose = FALSE)
-gbmFit1
