@@ -1,0 +1,34 @@
+
+Call:
+lm(formula = Hitter.std$Salary_1987 ~ ., data = Hitter.std[, 
+    1:16])
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-860.46 -180.75  -22.94  122.68 1312.17 
+
+Coefficients:
+                                     Estimate Std. Error t value Pr(>|t|)    
+(Intercept)                            535.97      20.47  26.179  < 2e-16 ***
+Number.of.times.at.bat.in.1986          55.71      32.95   1.691  0.09214 .  
+Hits_percentage_in_1986                -49.50      33.69  -1.469  0.14308    
+Home_run_percentage_in_1986             10.75      54.76   0.196  0.84456    
+Run_percentage_in_1986                 -71.19      34.83  -2.044  0.04204 *  
+Runs_batted_in_percentage_in_1986      -75.83      47.22  -1.606  0.10956    
+Walks_percentage_in_1986                88.69      46.85   1.893  0.05952 .  
+number.of.years.in.the.major.leagues   110.09      25.46   4.324 2.22e-05 ***
+Times_at_bat_per_year                   61.14      32.54   1.879  0.06140 .  
+Hits_percentage_career                 125.26      37.72   3.320  0.00104 ** 
+Home_run_percentage_career             -25.04      44.73  -0.560  0.57618    
+Run_percentage_career                   89.07      35.38   2.517  0.01247 *  
+Runs_batted_in_percentage_career       140.92      42.67   3.302  0.00110 ** 
+Walks_percentage_career                -65.22      47.92  -1.361  0.17477    
+number.of.put.outs.in.1986              73.95      22.93   3.225  0.00143 ** 
+number.of.assists.in.1986               30.01      32.97   0.910  0.36355    
+number.of.errors.in.1986               -20.04      30.22  -0.663  0.50782    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 332 on 246 degrees of freedom
+Multiple R-squared:  0.4913,	Adjusted R-squared:  0.4583 
+F-statistic: 14.85 on 16 and 246 DF,  p-value: < 2.2e-16
