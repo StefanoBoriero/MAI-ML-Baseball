@@ -49,14 +49,23 @@ cv.results[,"k"] <- k
     
 
     N <- dim(trainset)[1]
-    error = NULL
-    for(i in 1:N){
-      e_ass <- abs(pred.va[i] - trainset[i,22])
-      e_per <- e_ass / trainset[i,22]
-      error <- rbind(error, e_per)
-    }
+    #error = NULL
+    #for(i in 1:N){
+     # e_ass <- abs(pred.va[i] - trainset[i,22])
+    #  e_per <- e_ass / trainset[i,22]
+    #  error <- rbind(error, e_per)
+    #}
     
-    cv.results[j,"TR error"] <- sum(error) / dim(error)[1]
+    e <- 0
+    temp <- 0
+    norm.root.mse.tes = 0
+    for(i in 1:N){
+      e = (trainset[i,22] - pred.va[i])^2
+      temp = e + temp
+      norm.root.mse.test <- sqrt((temp)/((N-1)*var(trainset)))
+    }
+    cv.results[j,"TR error"] <- norm.root.mse.test
+    #cv.results[j,"TR error"] <- sum(error) / dim(error)[1]
     summary(model.linear)
     
     
@@ -64,15 +73,24 @@ cv.results[,"k"] <- k
     pred.va <- predict (model.linear, newdata=valset)
     
     N <- dim(valset)[1]
-    error = NULL
+    e <- 0
+    temp <- 0
+    #error = NULL
+    # for(i in 1:N){
+    #  e_ass <- abs(pred.va[i] - valset[i,22])
+    #  e_per <- e_ass / valset[i,22]
+    # error <- rbind(error, e_per)
+    #}
+    norm.root.mse.test = NULL
     for(i in 1:N){
-      e_ass <- abs(pred.va[i] - valset[i,22])
-      e_per <- e_ass / valset[i,22]
-      error <- rbind(error, e_per)
+      e = (valset[i,22] - pred.va[i])^2
+      temp = e + temp
+      norm.root.mse.test <- sqrt((temp)/((N-1)*var(valset)))
     }
-    cv.results[j,"VA error"] <- sum(error) / dim(error)[1]
     
-
+    # cv.results[j,"VA error"] <- sum(error) / dim(error)[1]
+    
+    cv.results[j,"VA error"] <- norm.root.mse.test
     cv.results[j,"fold"] <- j
           }
 
