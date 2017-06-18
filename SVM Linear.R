@@ -1,15 +1,20 @@
 library(e1071)
 library(TunePareto) # for generateCVRuns()
-library(caret)
-hitter <- read.csv("/Users/riccardosimionato/Music/iTunes/iTunes Media/Podcasts/Hitter_final.CSV", header=TRUE, sep =";")
-hitter2 <- read.csv("/Users/riccardosimionato/Music/iTunes/iTunes Media/Podcasts/Hitter_final.CSV", header=TRUE, sep =";")
+hitter <- read.csv("/Users/riccardosimionato/Music/iTunes/iTunes Media/Podcasts/hitter_refactored.CSV", header=TRUE, sep =",")
 library(kernlab)
-#inTraining <- createFolds(hitter$Annual_salary, k = 10, list = TRUE, returnTrain = FALSE)
 
 
 #CV part
 k <- 10
-target <- hitter$Annual_salary
+target <- hitter[,22]
+
+   #train on TR data
+  for (cost in 10^seq(-2,3))
+  {
+     for (g in 2^seq(-2,3))
+  
+  {
+    
 CV.folds <- generateCVRuns(target, ntimes=1, nfold=k, stratified=TRUE)
 
 cv.results <- matrix (rep(0,4*k),nrow=k)
@@ -18,15 +23,9 @@ colnames (cv.results) <- c("k","fold","TR error","VA error")
 cv.results[,"TR error"] <- 0
 cv.results[,"VA error"] <- 0
 cv.results[,"k"] <- k
-
-#learn <- sample(1:n, round(0.67*n))
-
-  # train on TR data
-  for (cost in 10^seq(-2,3))
-  {
-   
      
       for (j in 1:k)
+    
       {
         
        
@@ -37,32 +36,46 @@ cv.results[,"k"] <- k
         trainset <- hitter[-va,]
         valset <- hitter[va,]
         #valset2 <- valset[,1:2]
-        target <- trainset$Annual_salary
+        target <- trainset[,22]
+        #target <- trainset$Annual_salary
         targetval <- valset$Annual_salary
         
         
-    model.linear <- ksvm(hitter$Annual_salary, data=hitter[-CV.folds[[1]][[1]],], cross=length(CV.folds[[1]][[1]]))
-        
-    #model.linear <- svm(trainset[,2-9-12-16],target, C=cost, kernel="linear", cross = 10, type="eps-regression", scale = FALSE) #type="eps-regression"
+        model.linear <- svm(target~trainset[,7] +  trainset[, 9] + trainset[,10] + trainset[,19], C=cost, gamma=g, kernel = "linear", data = hitter)
+
 
     # predict TR data
-    pred.va <- predict (model.linear)
+    pred.va <- predict (model.linear, trainset)
     
-    #tab <- table(hitter[-va,]$Annual_salary, pred.va)
-    cv.results[j,"TR error"] <- ((hitter[-va,]$Annual_salary - pred.va)^2)/nrow(hitter[-va,])
-    #cv.results[j,"TR error"] <- 1-sum(tab[row(tab)==col(tab)])/sum(tab)
+
+    N <- dim(trainset)[1]
+    error = NULL
+    for(i in 1:N){
+      e_ass <- abs(pred.va[i] - trainset[i,22])
+      e_per <- e_ass / trainset[i,22]
+      error <- rbind(error, e_per)
+    }
+    
+    cv.results[j,"TR error"] <- sum(error) / dim(error)[1]
+    summary(model.linear)
+    
     
     # predict VA data
-    pred.va <- predict (model.linear, newdata=valset[,1:20])
+    pred.va <- predict (model.linear, newdata=valset)
     
-    #tab <- table(targetval, pred.va)
+    N <- dim(valset)[1]
+    error = NULL
+    for(i in 1:N){
+      e_ass <- abs(pred.va[i] - valset[i,22])
+      e_per <- e_ass / valset[i,22]
+      error <- rbind(error, e_per)
+    }
+    cv.results[j,"VA error"] <- sum(error) / dim(error)[1]
     
-    cv.results[j,"TR error"] <- ((targetval - pred.va)^2)/nrow(hitter[va,])
-    #cv.results[j,"VA error"] <- 1-sum(tab[row(tab)==col(tab)])/sum(tab)
-    
+
     cv.results[j,"fold"] <- j
-    
-      }
+          }
+
  
   ## have a look at the results ...
   cv.results
@@ -72,11 +85,11 @@ cv.results[,"k"] <- k
       ## What one really uses is the average of the last column
       (VA.error <- mean(cv.results[,"VA error"]))
     
-      nome <- paste('LIN_cv_c=',cost,'.txt')
-      nome2 <- paste('LIN_VA_error_c=',cost,'.txt')
+      nome <- paste('LIN_cv_c=',cost,'g=',g,'.txt')
+      nome2 <- paste('LIN_VA_error_c=',cost,'g=',g,'.txt')
       write.table(cv.results, file=nome, row.names=F)
       write.table(VA.error, file=nome2, row.names=F)
       
-     
+       
+     } 
   }
-

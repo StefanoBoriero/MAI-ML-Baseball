@@ -1,82 +1,100 @@
 library(e1071)
 library(TunePareto) # for generateCVRuns()
-library(caret)
-hitter <- read.csv("/Users/riccardosimionato/Music/iTunes/iTunes Media/Podcasts/Hitter_final.CSV", header=TRUE, sep =";")
-hitter2 <- read.csv("/Users/riccardosimionato/Music/iTunes/iTunes Media/Podcasts/Hitter_final.CSV", header=TRUE, sep =";")
-
-#inTraining <- createFolds(hitter$Annual_salary, k = 10, list = TRUE, returnTrain = FALSE)
+hitter <- read.csv("/Users/riccardosimionato/Music/iTunes/iTunes Media/Podcasts/hitter_refactored.CSV", header=TRUE, sep =",")
+library(kernlab)
 
 
 #CV part
 k <- 10
-target <- hitter$Annual_salary
-CV.folds <- generateCVRuns(target, ntimes=1, nfold=k, stratified=TRUE)
+target <- hitter[,22]
+#target <- hitter$Annual_salary
 
-cv.results <- matrix (rep(0,4*k),nrow=k)
-colnames (cv.results) <- c("k","fold","TR error","VA error")
 
-cv.results[,"TR error"] <- 0
-cv.results[,"VA error"] <- 0
-cv.results[,"k"] <- k
-
-# train on TR data
+#train on TR data
 for (cost in 10^seq(-2,3))
 {
-  for (d in seq(2,5))
+  for (g in 2^seq(-2,3))
+    
   {
-    for (c in 1^seq(-2,3))
-    {
-      
-      for (j in 1:k)
-      {
-        # get VA data
-        va <- unlist(CV.folds[[1]][[j]])
-        #va <- unlist(inTraining[j])
-        trainset <- hitter[-va,]
-        valset <- hitter[va,]
-        #valset2 <- valset[,1:2]
-        target <- trainset$Annual_salary
-        targetval <- valset$Annual_salary
-        
-        for (cost in 10^seq(-2,3))
+    
+    CV.folds <- generateCVRuns(target, ntimes=1, nfold=k, stratified=TRUE)
+    
+    cv.results <- matrix (rep(0,4*k),nrow=k)
+    colnames (cv.results) <- c("k","fold","TR error","VA error")
+    
+    cv.results[,"TR error"] <- 0
+    cv.results[,"VA error"] <- 0
+    cv.results[,"k"] <- k
+    
+    
+  
+        for (j in 1:k)
+          
         {
-          for (e in 10^seq(-2,3))
-          {
-            for (g in 2^seq(-3,4))
-            {
+          
+          
+          
+          # get VA data
+          va <- unlist(CV.folds[[1]][[j]])
+          #va <- unlist(inTraining[j])
+          trainset <- hitter[-va,]
+          valset <- hitter[va,]
+          #valset2 <- valset[,1:2]
+          target <- trainset[,22]
+          #target <- trainset$Annual_salary
+          targetval <- valset$Annual_salary
+          
+          model.rad <- svm(target~trainset[,7]+ trainset[, 9] + trainset[,10] + trainset[,19],C=cost, gamma=g, kernel = "radial", data = hitter)
+          
+          
+          # predict TR data
+          pred.va <- predict (model.rad, trainset)
+          
+          
+          N <- dim(trainset)[1]
+          error = NULL
+          for(i in 1:N){
+            e_ass <- abs(pred.va[i] - trainset[i,22])
+            e_per <- e_ass / trainset[i,22]
+            error <- rbind(error, e_per)
+          }
+          
+          cv.results[j,"TR error"] <- sum(error) / dim(error)[1]
+          summary(model.rad)
+          
+          
+          # predict VA data
+          pred.va <- predict (model.rad, newdata=valset)
+          
+          N <- dim(valset)[1]
+          error = NULL
+          for(i in 1:N){
+            e_ass <- abs(pred.va[i] - valset[i,22])
+            e_per <- e_ass / valset[i,22]
+            error <- rbind(error, e_per)
+          }
+          cv.results[j,"VA error"] <- sum(error) / dim(error)[1]
+          
+          
+          cv.results[j,"fold"] <- j
+          
+        }
+        ## have a look at the results ...
+        cv.results
         
-        model.rad <- svm(trainset[,1:20],target, C=cost, epsilon=e, kernel="radial", gamma=g, scale = FALSE)
         
-        #plot.prediction (model.pol, paste ("quadratic kernel (C=", C, ") ", model.pol$tot.nSV, " Support Vectors", sep=""))
         
-        # predict TR data
-        pred.va <- predict (model.pol)
+        ## What one really uses is the average of the last column
+        (VA.error <- mean(cv.results[,"VA error"]))
         
-        tab <- table(hitter[-va,]$Annual_salary, pred.va)
-        cv.results[j,"TR error"] <- 1-sum(tab[row(tab)==col(tab)])/sum(tab)
+        nome <- paste('RAD_cv_c=',cost,'g=',g,'.txt')
+        nome2 <- paste('RAD_VA_error_c=',cost,'g=',g,'.txt')
+        write.table(cv.results, file=nome, row.names=F)
+        write.table(VA.error, file=nome2, row.names=F)
         
-        # predict VA data
-        pred.va <- predict (model.linear, newdata=valset[,1:20])
-        targetval <- valset$Annual_salary
-        tab <- table(targetval, pred.va)
-        cv.results[j,"VA error"] <- 1-sum(tab[row(tab)==col(tab)])/sum(tab)
       }
-      
-      ## have a look at the results ...
-      cv.results
-      
-      
-      
-      ## What one really uses is the average of the last column
-      (VA.error <- mean(cv.results[,"VA error"]))
-      
-      nome <- paste('RAD_cv_c=',cost,'degree',d,'coef',c,'.txt')
-      nome2 <- paste('RAD_VA_error_c=',cost,'degree',d,'coef',c,'.txt')
-      write.table(cv.results, file=nome, row.names=F)
-      write.table(VA.error, file=nome2, row.names=F)
-    }
-  }
+    
+  
 }
-
 
 
