@@ -1,6 +1,6 @@
 library(e1071)
 library(TunePareto) # for generateCVRuns()
-hitter <- read.csv("/Users/riccardosimionato/Music/iTunes/iTunes Media/Podcasts/hitter_refactored_scaled.CSV", header=TRUE, sep =",")
+hitter <- read.csv("data/hitter_refactored_scaled.CSV", header=TRUE, sep =",")
 library(kernlab)
 
 
@@ -11,6 +11,14 @@ target <- hitter[,17]
 models.recap <- matrix(ncol = 4)
 colnames(models.recap) <- c("Cost", "g", "TR_NRMSE", "VA_NRMSE")
 
+CV.folds <- generateCVRuns(target, ntimes=1, nfold=k, stratified=TRUE)
+
+cv.results <- matrix (rep(0,4*k),nrow=k)
+colnames (cv.results) <- c("k","fold","TR error","VA error")
+
+cv.results[,"TR error"] <- 0
+cv.results[,"VA error"] <- 0
+cv.results[,"k"] <- k
 
 #train on TR data
 #train on TR data
@@ -26,14 +34,7 @@ for (cost in 10^seq(-2,3))
       {
         
     
-    CV.folds <- generateCVRuns(target, ntimes=1, nfold=k, stratified=TRUE)
     
-    cv.results <- matrix (rep(0,4*k),nrow=k)
-    colnames (cv.results) <- c("k","fold","TR error","VA error")
-    
-    cv.results[,"TR error"] <- 0
-    cv.results[,"VA error"] <- 0
-    cv.results[,"k"] <- k
     
     for (j in 1:k){
       
@@ -45,7 +46,7 @@ for (cost in 10^seq(-2,3))
       targetval <- valset$Annual_salary
       
       
-      model.pol <- svm(target~., C=cost, gamma = g, coef=coef, degree=d, kernel = "polynomial", data = trainset[,-17])
+      model.pol <- svm(target~., cost=cost, gamma = g, coef0=coef, degree=d, kernel = "polynomial", data = trainset[,-17])
       
       
       # predict TR data
