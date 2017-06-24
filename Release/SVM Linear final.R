@@ -1,12 +1,12 @@
 library(e1071)
 library(TunePareto) # for generateCVRuns()
-hitter <- read.csv("hitter_scaled_log.CSV", header=TRUE, sep =",")
+hitter <- read.csv("hitter_scaled_log_2.CSV", header=TRUE, sep =",")
 library(kernlab)
 
 
 #CV part
 k <- 100
-target <- hitter[,21]
+target <- hitter$Annual_salary
 
 models.recap <- matrix(ncol = 3)
 colnames(models.recap) <- c("Cost", "TR_NRMSE", "VA_NRMSE")
@@ -30,11 +30,11 @@ for (cost in 10^seq(-2,3)){
     va <- unlist(CV.folds[[1]][[j]])
     trainset <- hitter[-va,]
     valset <- hitter[va,]
-    target <- trainset[,21]
+    target <- trainset$Annual_salary
     targetval <- valset$Annual_salary
     
     
-    model.linear <- svm(target~ .,  cost=cost, kernel = "linear", data = trainset[,-21])
+    model.linear <- svm(target~ .,  cost=cost, kernel = "linear", data = trainset[,-3])#
     
     
     # predict TR data
@@ -47,10 +47,10 @@ for (cost in 10^seq(-2,3)){
     temp <- 0
     norm.root.mse.train = 0
     for(i in 1:(N)){
-      e = (trainset[i,21] - pred.va[i])^2
+      e = (trainset[i,3] - pred.va[i])^2#
       temp = e + temp
     }
-    norm.root.mse.train <- sqrt((temp)/((N-1)*var(trainset[,21])))
+    norm.root.mse.train <- sqrt((temp)/((N-1)*var(trainset$Annual_salary)))
     norm.root.mse.train
     
     cv.results[j,"TR error"] <- norm.root.mse.train
@@ -66,10 +66,10 @@ for (cost in 10^seq(-2,3)){
     
     norm.root.mse.test = NULL
     for(i in 1:(N)){
-      e = (valset[i,21] - pred.va[i])^2
+      e = (valset[i,3] - pred.va[i])^2#
       temp = e + temp
     }
-    norm.root.mse.test <- sqrt((temp)/((N-1)*var(valset[,21])))
+    norm.root.mse.test <- sqrt((temp)/((N-1)*var(valset$Annual_salary)))
     norm.root.mse.test
     # cv.results[j,"VA error"] <- sum(error) / dim(error)[1]
     
