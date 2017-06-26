@@ -1,0 +1,105 @@
+library(e1071)
+hitter <- read.csv("Val.CSV", header=TRUE, sep =",")
+library(caret)
+
+
+#CV part
+k <- 213
+target <- hitter$Annual_salary
+
+models.recap <- matrix(ncol = 5)
+colnames(models.recap) <- c("Cost", "g", "coef", "TR_NRMSE", "VA_NRMSE")
+
+CV.folds <- createFolds(target, k=k)
+cv.results <- matrix (rep(0,4*k),nrow=k)
+colnames (cv.results) <- c("k","fold","TR error","VA error")
+
+cv.results[,"TR error"] <- 0
+cv.results[,"VA error"] <- 0
+cv.results[,"k"] <- k
+
+#train on TR data
+for (cost in 10^seq(-2,-1))
+{
+  for (g in 2^seq(-2,0))
+    
+  {
+    for (coef in 10^seq(0,3))
+    {
+        
+        for (j in 1:k){
+          
+          # get VA data
+          va <- unlist(CV.folds[j])
+          trainset <- hitter[-va,]
+          valset <- hitter[va,]
+          target <- trainset$Annual_salary
+          targetval <- valset$Annual_salary
+          
+          
+          model.pol <- svm(target~., cost=cost, gamma = g, coef0=coef, degree=2, kernel = "polynomial", data = trainset[,-21])#
+          
+          # predict TR data
+          pred.va <- predict (model.pol, trainset)
+          
+          
+          N <- dim(trainset)[1]
+          
+          e <- 0
+          temp <- 0
+          norm.root.mse.train = 0
+          for(i in 1:(N)){
+            e = (trainset[i,21] - pred.va[i])^2#
+            temp = e + temp
+          }
+          norm.root.mse.train <- sqrt((temp)/((N-1)*var(trainset$Annual_salary)))
+          norm.root.mse.train
+          
+          cv.results[j,"TR error"] <- norm.root.mse.train
+          summary(model.pol)
+          
+          
+          # predict VA data
+          pred.va <- predict (model.pol, newdata=valset)
+          
+          N <- dim(valset)[1]
+          e <- 0
+          temp <- 0
+          
+          norm.root.mse.test = NULL
+          for(i in 1:(N)){
+            e = (valset[i,21] - pred.va[i])^2#
+            temp = e + temp
+          }
+          #norm.root.mse.test <- sqrt((temp)/((N-1)*var(valset$Annual_salary)))
+          norm.root.mse.test <- sqrt((temp))
+          
+          norm.root.mse.test
+
+          cv.results[j,"VA error"] <- norm.root.mse.test
+          cv.results[j,"fold"] <- j
+        }
+        
+        
+        ## have a look at the results
+        cv.results
+        
+        
+        
+        ## Compute the average 
+        (VA.error <- mean(cv.results[,"VA error"]))
+        (TR.error <- mean(cv.results[,"TR error"]))
+        
+        nome <- paste('POL_cv100_c=',cost,'g=',g,'coef=',coef,'.txt')
+        nome2 <- paste('POL_VA100_error_c=',cost,'g=',g,'coef=',coef,'.txt')
+        write.table(cv.results, file=nome, row.names=F)
+        write.table(VA.error, file=nome2, row.names=F)
+        
+        models.recap <- rbind(models.recap, c(cost, g, coef, TR.error, VA.error)) 
+      }
+    }
+  } 
+
+models.recap <- models.recap[-1,]
+
+write.table(models.recap, file = "SVMP.CSV", sep =" & ", col.names = TRUE)
